@@ -7,6 +7,8 @@ from aiohttp_socks import ProxyConnector
 from datetime import datetime
 from colorama import *
 import asyncio, random, json, os, pytz
+import functools # <<< TAMBAH INI
+from seleniumbase import SB 
 
 wib = pytz.timezone('Asia/Jakarta')
 
@@ -48,6 +50,7 @@ class Monami:
         self.account_proxies = {}
         self.password = {}
         self.access_tokens = {}
+        self.tokens_output_path = os.path.join(os.getcwd(), "tokens.txt")
 
     def clear_terminal(self):
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -74,7 +77,7 @@ class Monami:
         hours, remainder = divmod(seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
         return f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
-    
+
     def load_accounts(self):
         filename = "accounts.json"
         try:
@@ -89,7 +92,7 @@ class Monami:
                 return []
         except json.JSONDecodeError:
             return []
-    
+
     async def load_proxies(self, use_proxy_choice: int):
         filename = "proxy.txt"
         try:
@@ -107,7 +110,7 @@ class Monami:
                     return
                 with open(filename, 'r') as f:
                     self.proxies = [line.strip() for line in f.read().splitlines() if line.strip()]
-            
+
             if not self.proxies:
                 self.log(f"{Fore.RED + Style.BRIGHT}No Proxies Found.{Style.RESET_ALL}")
                 return
@@ -116,7 +119,7 @@ class Monami:
                 f"{Fore.GREEN + Style.BRIGHT}Proxies Total  : {Style.RESET_ALL}"
                 f"{Fore.WHITE + Style.BRIGHT}{len(self.proxies)}{Style.RESET_ALL}"
             )
-        
+
         except Exception as e:
             self.log(f"{Fore.RED + Style.BRIGHT}Failed To Load Proxies: {e}{Style.RESET_ALL}")
             self.proxies = []
@@ -143,13 +146,13 @@ class Monami:
         self.account_proxies[email] = proxy
         self.proxy_index = (self.proxy_index + 1) % len(self.proxies)
         return proxy
-    
+
     def mask_account(self, account):
         if "@" in account:
             local, domain = account.split('@', 1)
             mask_account = local[:3] + '*' * 3 + local[-3:]
             return f"{mask_account}@{domain}"
-        
+
         mask_account = account[:3] + '*' * 3 + account[-3:]
         return mask_account
 
@@ -199,39 +202,73 @@ class Monami:
                     print(f"{Fore.RED + Style.BRIGHT}Invalid input. Enter 'y' or 'n'.{Style.RESET_ALL}")
 
         return choose, rotate
-    
+
     async def check_connection(self, email: str, proxy=None):
         connector = ProxyConnector.from_url(proxy) if proxy else None
         try:
-            async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
+            async with ClientSession(connector=connector, timeout=ClientTimeout(total=30)) as session: # Reduced timeout for quicker checks
                 async with session.post(url="http://ip-api.com/json") as response:
                     response.raise_for_status()
                     return await response.json()
         except (Exception, ClientResponseError) as e:
             self.print_message(email, proxy, Fore.RED, f"Connection Not 200 OK: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
             return None
-    
-    async def user_login(self, email: str, proxy=None, retries=5):
-        url = "https://monami.network/api/login"
-        data = json.dumps({"email":email,"password":self.password[email]})
-        headers = self.HEADERS[email].copy()
-        headers["Content-Length"] = str(len(data))
-        headers["Content-Type"] = "application/json"
-        for attempt in range(retries):
-            connector = ProxyConnector.from_url(proxy) if proxy else None
-            try:
-                async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
-                    async with session.post(url=url, headers=headers, data=data, ssl=False) as response:
-                        response.raise_for_status()
-                        return await response.json()
-            except (Exception, ClientResponseError) as e:
-                if attempt < retries - 1:
-                    await asyncio.sleep(5)
-                    continue
-                self.print_message(email, proxy, Fore.RED, f"Login Failed: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
 
-        return None
-    
+    def _seleniumbase_login_sync(self, email: str, password: str, max_retries: int, delay_between_retries: int):
+        login_url = "https://monami.network/signin"
+        for attempt in range(max_retries):
+            self.log(f"{Fore.CYAN}Attempting SeleniumBase login for {email} (Attempt {attempt + 1}/{max_retries}){Style.RESET_ALL}")
+            try:
+                with SB(uc=True, xvfb=True, headless=True) as sb:
+                    sb.uc_open(login_url)
+                    sb.type('input[name="email"]', email)
+                    sb.type('input[name="password"]', password)
+                    sb.uc_click('button:contains("Sign In")')
+                    sb.sleep(5) 
+
+                    access_token = None
+                    all_cookies = sb.get_cookies()
+                    for cookie in all_cookies:
+                        if cookie.get('name') == 'accessToken': # Adjust if cookie name is different
+                            access_token = cookie.get('value')
+                            break
+
+                    if access_token:
+                        return {"accessToken": access_token}
+                    else:
+                        self.log(f"{Fore.RED}Access token not found for {email} after SeleniumBase login.{Style.RESET_ALL}")
+
+            except Exception as e:
+                self.log(f"{Fore.RED}Error during SeleniumBase login for {email}: {str(e)}{Style.RESET_ALL}")
+
+            if attempt < max_retries - 1:
+                self.log(f"{Fore.YELLOW}Waiting {delay_between_retries} seconds before retrying...{Style.RESET_ALL}")
+                time.sleep(delay_between_retries)
+            else:
+                self.log(f"{Fore.RED}SeleniumBase login failed for {email} after {max_retries} attempts.{Style.RESET_ALL}")
+        return None # All retries failed
+
+    def _write_token(self, email: str, token: str):
+        with open(self.tokens_output_path, "a") as f:
+            f.write(f"{email}:{token}\n")
+        self.log(f"{Fore.GREEN}Token for {email} successfully written to {self.tokens_output_path}{Style.RESET_ALL}")
+
+    async def user_login(self, email: str, proxy=None, retries=5):
+        loop = asyncio.get_event_loop()
+        login_result = await loop.run_in_executor(
+            None, # Use default ThreadPoolExecutor
+            functools.partial(self._seleniumbase_login_sync, email, self.password[email], retries, 5)
+        )
+
+        if login_result and "accessToken" in login_result:
+            self.access_tokens[email] = login_result["accessToken"]
+            self._write_token(email, login_result["accessToken"])
+            self.print_message(email, proxy, Fore.GREEN, "Login Success (via SeleniumBase)")
+            return login_result
+        else:
+            self.print_message(email, proxy, Fore.RED, "Login Failed (via SeleniumBase after retries)")
+            return None
+
     async def user_info(self, email: str, use_proxy: bool, rotate_proxy: bool, proxy=None, retries=5):
         url = f"{self.BASE_API}/users"
         headers = self.HEADERS[email].copy()
@@ -242,6 +279,8 @@ class Monami:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
                     async with session.get(url=url, headers=headers, ssl=False) as response:
                         if response.status == 401:
+                            self.print_message(email, proxy, Fore.YELLOW, "Access token expired, attempting re-login.")
+                          
                             await self.process_user_login(email, use_proxy, rotate_proxy)
                             headers["Authorization"] = f"Bearer {self.access_tokens[email]}"
                             continue
@@ -254,7 +293,7 @@ class Monami:
                 self.print_message(email, proxy, Fore.RED, f"GET User Info Failed: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
 
         return None
-    
+
     async def perform_checkin(self, email: str, use_proxy: bool, rotate_proxy: bool, proxy=None, retries=5):
         url = f"{self.BASE_API}/users/checkin"
         data = json.dumps({"email":email})
@@ -268,6 +307,7 @@ class Monami:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
                     async with session.patch(url=url, headers=headers, data=data, ssl=False) as response:
                         if response.status == 401:
+                            self.print_message(email, proxy, Fore.YELLOW, "Access token expired, attempting re-login.")
                             await self.process_user_login(email, use_proxy, rotate_proxy)
                             headers["Authorization"] = f"Bearer {self.access_tokens[email]}"
                             continue
@@ -280,7 +320,7 @@ class Monami:
                 self.print_message(email, proxy, Fore.RED, f"Check-In Failed: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
 
         return None
-    
+
     async def connect_node(self, email: str, use_proxy: bool, rotate_proxy: bool, proxy=None, retries=5):
         url = f"{self.BASE_API}/points/update-last-active"
         data = json.dumps({"email":email})
@@ -294,6 +334,7 @@ class Monami:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
                     async with session.patch(url=url, headers=headers, data=data, ssl=False) as response:
                         if response.status == 401:
+                            self.print_message(email, proxy, Fore.YELLOW, "Access token expired, attempting re-login.")
                             await self.process_user_login(email, use_proxy, rotate_proxy)
                             headers["Authorization"] = f"Bearer {self.access_tokens[email]}"
                             continue
@@ -306,7 +347,7 @@ class Monami:
                 self.print_message(email, proxy, Fore.RED, f"Lite Node Not Connected: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
 
         return None
-    
+
     async def update_point(self, email: str, use_proxy: bool, rotate_proxy: bool, proxy=None, retries=5):
         url = f"{self.BASE_API}/points/update-point?email={email}"
         headers = self.HEADERS[email].copy()
@@ -317,6 +358,7 @@ class Monami:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
                     async with session.get(url=url, headers=headers, ssl=False) as response:
                         if response.status == 401:
+                            self.print_message(email, proxy, Fore.YELLOW, "Access token expired, attempting re-login.")
                             await self.process_user_login(email, use_proxy, rotate_proxy)
                             headers["Authorization"] = f"Bearer {self.access_tokens[email]}"
                             continue
@@ -329,7 +371,7 @@ class Monami:
                 self.print_message(email, proxy, Fore.RED, f"Update Point Failed: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
 
         return None
-    
+
     async def task_lists(self, email: str, use_proxy: bool, rotate_proxy: bool, proxy=None, retries=5):
         url = f"{self.BASE_API}/tasks/?email={email.replace('@', '%40')}"
         headers = self.HEADERS[email].copy()
@@ -340,6 +382,7 @@ class Monami:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
                     async with session.get(url=url, headers=headers, ssl=False) as response:
                         if response.status == 401:
+                            self.print_message(email, proxy, Fore.YELLOW, "Access token expired, attempting re-login.")
                             await self.process_user_login(email, use_proxy, rotate_proxy)
                             headers["Authorization"] = f"Bearer {self.access_tokens[email]}"
                             continue
@@ -352,7 +395,7 @@ class Monami:
                 self.print_message(email, proxy, Fore.RED, f"GET Task Lists Failed: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
 
         return None
-    
+
     async def complete_task(self, email: str, task_field: str, use_proxy: bool, rotate_proxy: bool, proxy=None, retries=5):
         url = f"{self.BASE_API}/users/task"
         data = json.dumps({"email":email, "field":task_field})
@@ -366,6 +409,7 @@ class Monami:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
                     async with session.patch(url=url, headers=headers, data=data, ssl=False) as response:
                         if response.status == 401:
+                            self.print_message(email, proxy, Fore.YELLOW, "Access token expired, attempting re-login.")
                             await self.process_user_login(email, use_proxy, rotate_proxy)
                             headers["Authorization"] = f"Bearer {self.access_tokens[email]}"
                             continue
@@ -378,39 +422,30 @@ class Monami:
                 self.print_message(email, proxy, Fore.WHITE, f"Task {task_field}{Fore.RED+Style.BRIGHT} Not Completed: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
 
         return None
-    
+
     async def process_check_connection(self, email: str, use_proxy: bool, rotate_proxy: bool):
+ 
         while True:
             proxy = self.get_next_proxy_for_account(email) if use_proxy else None
 
             check = await self.check_connection(email, proxy)
             if check and check.get("status") == "success":
                 return True
-            
+
             if rotate_proxy:
                 proxy = self.rotate_proxy_for_account(email)
 
             await asyncio.sleep(5)
 
     async def process_user_login(self, email: str, use_proxy: bool, rotate_proxy: bool):
-        is_valid = await self.process_check_connection(email, use_proxy, rotate_proxy)
-        if is_valid:
-            while True:
-                proxy = self.get_next_proxy_for_account(email) if use_proxy else None
-
-                login = await self.user_login(email, proxy)
-                if login:
-                    self.access_tokens[email] = login["accessToken"]
-
-                    self.print_message(email, proxy, Fore.GREEN, "Login Success")
-                    return True
-
-                await asyncio.sleep(5)
+ 
+        return await self.user_login(email, None) # Proxy is not directly passed to SB within user_login
 
     async def looping_user_login(self, email: str, use_proxy: bool, rotate_proxy: bool):
         while True:
             await asyncio.sleep(24 * 60 * 55)
-            await self.process_user_login(email, use_proxy, rotate_proxy)
+            await self.user_login(email, None)
+
 
     async def looping_perform_checkin(self, email: str, use_proxy: bool, rotate_proxy: bool):
         while True:
@@ -517,7 +552,7 @@ class Monami:
             if not accounts:
                 self.log(f"{Fore.RED + Style.BRIGHT}No Accounts Loaded.{Style.RESET_ALL}")
                 return
-            
+
             use_proxy_choice, rotate_proxy = self.print_question()
 
             use_proxy = False
