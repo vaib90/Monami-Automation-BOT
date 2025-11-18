@@ -6,11 +6,11 @@ from aiohttp import (
 from aiohttp_socks import ProxyConnector
 from datetime import datetime
 from colorama import *
-import asyncio, random, json, os, pytz
-import functools # <<< TAMBAH INI
+import asyncio, random, json, os, pytz, time
+import functools
 from seleniumbase import SB 
 
-wib = pytz.timezone('Asia/Jakarta')
+wib = pytz.timezone('Asia/Ho_Chi_Minh')
 
 USER_AGENT = [
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -64,13 +64,11 @@ class Monami:
 
     def welcome(self):
         print(Fore.LIGHTGREEN_EX + Style.BRIGHT + "\n" + "═" * 60)
-        print(Fore.GREEN + Style.BRIGHT + "    ⚡ Auto Connect Node Ping BOT ⚡")
+        print(Fore.GREEN + Style.BRIGHT + "    ⚡ Tự động kết nối Node Ping BOT ⚡")
         print(Fore.CYAN + Style.BRIGHT + "    ────────────────────────────────")
-        print(Fore.YELLOW + Style.BRIGHT + "    🧠 Project    : Monami - Automation Bot")
-        print(Fore.YELLOW + Style.BRIGHT + "    🧑‍💻 Author     : YetiDAO")
-        print(Fore.YELLOW + Style.BRIGHT + "    🌐 Status     : Active & Listening...")
+        print(Fore.YELLOW + Style.BRIGHT + "    🧠 Dự án    : Monami - Bot tự động")
+        print(Fore.YELLOW + Style.BRIGHT + "    🌐 Trạng thái : Đang hoạt động...")
         print(Fore.CYAN + Style.BRIGHT + "    ────────────────────────────────")
-        print(Fore.MAGENTA + Style.BRIGHT + "    🧬 Powered by Cryptodai3 × YetiDAO | Buddy v1.0 🚀")
         print(Fore.LIGHTGREEN_EX + Style.BRIGHT + "═" * 60 + "\n")
 
     def format_seconds(self, seconds):
@@ -82,7 +80,7 @@ class Monami:
         filename = "accounts.json"
         try:
             if not os.path.exists(filename):
-                self.log(f"{Fore.RED}File {filename} Not Found.{Style.RESET_ALL}")
+                self.log(f"{Fore.RED}Không tìm thấy file {filename}.{Style.RESET_ALL}")
                 return
 
             with open(filename, 'r') as file:
@@ -106,22 +104,22 @@ class Monami:
                         self.proxies = [line.strip() for line in content.splitlines() if line.strip()]
             else:
                 if not os.path.exists(filename):
-                    self.log(f"{Fore.RED + Style.BRIGHT}File {filename} Not Found.{Style.RESET_ALL}")
+                    self.log(f"{Fore.RED + Style.BRIGHT}Không tìm thấy file {filename}.{Style.RESET_ALL}")
                     return
                 with open(filename, 'r') as f:
                     self.proxies = [line.strip() for line in f.read().splitlines() if line.strip()]
 
             if not self.proxies:
-                self.log(f"{Fore.RED + Style.BRIGHT}No Proxies Found.{Style.RESET_ALL}")
+                self.log(f"{Fore.RED + Style.BRIGHT}Không tìm thấy proxy nào.{Style.RESET_ALL}")
                 return
 
             self.log(
-                f"{Fore.GREEN + Style.BRIGHT}Proxies Total  : {Style.RESET_ALL}"
+                f"{Fore.GREEN + Style.BRIGHT}Tổng số proxy  : {Style.RESET_ALL}"
                 f"{Fore.WHITE + Style.BRIGHT}{len(self.proxies)}{Style.RESET_ALL}"
             )
 
         except Exception as e:
-            self.log(f"{Fore.RED + Style.BRIGHT}Failed To Load Proxies: {e}{Style.RESET_ALL}")
+            self.log(f"{Fore.RED + Style.BRIGHT}Lỗi khi tải proxy: {e}{Style.RESET_ALL}")
             self.proxies = []
 
     def check_proxy_schemes(self, proxies):
@@ -158,13 +156,13 @@ class Monami:
 
     def print_message(self, account, proxy, color, message):
         self.log(
-            f"{Fore.CYAN + Style.BRIGHT}[ Account:{Style.RESET_ALL}"
+            f"{Fore.CYAN + Style.BRIGHT}[ Tài khoản:{Style.RESET_ALL}"
             f"{Fore.WHITE + Style.BRIGHT} {self.mask_account(account)} {Style.RESET_ALL}"
             f"{Fore.MAGENTA + Style.BRIGHT}-{Style.RESET_ALL}"
             f"{Fore.CYAN + Style.BRIGHT} Proxy: {Style.RESET_ALL}"
             f"{Fore.WHITE + Style.BRIGHT}{proxy}{Style.RESET_ALL}"
             f"{Fore.MAGENTA + Style.BRIGHT} - {Style.RESET_ALL}"
-            f"{Fore.CYAN + Style.BRIGHT}Status:{Style.RESET_ALL}"
+            f"{Fore.CYAN + Style.BRIGHT}Trạng thái:{Style.RESET_ALL}"
             f"{color + Style.BRIGHT} {message} {Style.RESET_ALL}"
             f"{Fore.CYAN + Style.BRIGHT}]{Style.RESET_ALL}"
         )
@@ -172,52 +170,52 @@ class Monami:
     def print_question(self):
         while True:
             try:
-                print(f"{Fore.WHITE + Style.BRIGHT}1. Run With Free Proxyscrape Proxy{Style.RESET_ALL}")
-                print(f"{Fore.WHITE + Style.BRIGHT}2. Run With Private Proxy{Style.RESET_ALL}")
-                print(f"{Fore.WHITE + Style.BRIGHT}3. Run Without Proxy{Style.RESET_ALL}")
-                choose = int(input(f"{Fore.BLUE + Style.BRIGHT}Choose [1/2/3] -> {Style.RESET_ALL}").strip())
+                print(f"{Fore.WHITE + Style.BRIGHT}1. Chạy với proxy miễn phí từ Proxyscrape{Style.RESET_ALL}")
+                print(f"{Fore.WHITE + Style.BRIGHT}2. Chạy với proxy riêng{Style.RESET_ALL}")
+                print(f"{Fore.WHITE + Style.BRIGHT}3. Chạy không dùng proxy{Style.RESET_ALL}")
+                choose = int(input(f"{Fore.BLUE + Style.BRIGHT}Chọn [1/2/3] -> {Style.RESET_ALL}").strip())
 
                 if choose in [1, 2, 3]:
                     proxy_type = (
-                        "With Free Proxyscrape" if choose == 1 else 
-                        "With Private" if choose == 2 else 
-                        "Without"
+                        "với proxy miễn phí Proxyscrape" if choose == 1 else 
+                        "với proxy riêng" if choose == 2 else 
+                        "không dùng proxy"
                     )
-                    print(f"{Fore.GREEN + Style.BRIGHT}Run {proxy_type} Proxy Selected.{Style.RESET_ALL}")
+                    print(f"{Fore.GREEN + Style.BRIGHT}Đã chọn chạy {proxy_type}.{Style.RESET_ALL}")
                     break
                 else:
-                    print(f"{Fore.RED + Style.BRIGHT}Please enter either 1, 2 or 3.{Style.RESET_ALL}")
+                    print(f"{Fore.RED + Style.BRIGHT}Vui lòng nhập 1, 2 hoặc 3.{Style.RESET_ALL}")
             except ValueError:
-                print(f"{Fore.RED + Style.BRIGHT}Invalid input. Enter a number (1, 2 or 3).{Style.RESET_ALL}")
+                print(f"{Fore.RED + Style.BRIGHT}Dữ liệu không hợp lệ. Vui lòng nhập số (1, 2 hoặc 3).{Style.RESET_ALL}")
 
         rotate = False
         if choose in [1, 2]:
             while True:
-                rotate = input(f"{Fore.BLUE + Style.BRIGHT}Rotate Invalid Proxy? [y/n] -> {Style.RESET_ALL}").strip()
+                rotate = input(f"{Fore.BLUE + Style.BRIGHT}Tự động đổi proxy khi lỗi? [y/n] -> {Style.RESET_ALL}").strip()
 
                 if rotate in ["y", "n"]:
                     rotate = rotate == "y"
                     break
                 else:
-                    print(f"{Fore.RED + Style.BRIGHT}Invalid input. Enter 'y' or 'n'.{Style.RESET_ALL}")
+                    print(f"{Fore.RED + Style.BRIGHT}Dữ liệu không hợp lệ. Nhập 'y' hoặc 'n'.{Style.RESET_ALL}")
 
         return choose, rotate
 
     async def check_connection(self, email: str, proxy=None):
         connector = ProxyConnector.from_url(proxy) if proxy else None
         try:
-            async with ClientSession(connector=connector, timeout=ClientTimeout(total=30)) as session: # Reduced timeout for quicker checks
+            async with ClientSession(connector=connector, timeout=ClientTimeout(total=30)) as session:
                 async with session.post(url="http://ip-api.com/json") as response:
                     response.raise_for_status()
                     return await response.json()
         except (Exception, ClientResponseError) as e:
-            self.print_message(email, proxy, Fore.RED, f"Connection Not 200 OK: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
+            self.print_message(email, proxy, Fore.RED, f"Kết nối không ổn định: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
             return None
 
     def _seleniumbase_login_sync(self, email: str, password: str, max_retries: int, delay_between_retries: int):
         login_url = "https://monami.network/signin"
         for attempt in range(max_retries):
-            self.log(f"{Fore.CYAN}Attempting SeleniumBase login for {email} (Attempt {attempt + 1}/{max_retries}){Style.RESET_ALL}")
+            self.log(f"{Fore.CYAN}Đang thử đăng nhập bằng SeleniumBase cho {email} (Lần thử {attempt + 1}/{max_retries}){Style.RESET_ALL}")
             try:
                 with SB(uc=True, xvfb=True, headless=True) as sb:
                     sb.uc_open(login_url)
@@ -229,44 +227,44 @@ class Monami:
                     access_token = None
                     all_cookies = sb.get_cookies()
                     for cookie in all_cookies:
-                        if cookie.get('name') == 'accessToken': # Adjust if cookie name is different
+                        if cookie.get('name') == 'accessToken':
                             access_token = cookie.get('value')
                             break
 
                     if access_token:
                         return {"accessToken": access_token}
                     else:
-                        self.log(f"{Fore.RED}Access token not found for {email} after SeleniumBase login.{Style.RESET_ALL}")
+                        self.log(f"{Fore.RED}Không tìm thấy access token cho {email} sau khi đăng nhập.{Style.RESET_ALL}")
 
             except Exception as e:
-                self.log(f"{Fore.RED}Error during SeleniumBase login for {email}: {str(e)}{Style.RESET_ALL}")
+                self.log(f"{Fore.RED}Lỗi khi đăng nhập bằng SeleniumBase cho {email}: {str(e)}{Style.RESET_ALL}")
 
             if attempt < max_retries - 1:
-                self.log(f"{Fore.YELLOW}Waiting {delay_between_retries} seconds before retrying...{Style.RESET_ALL}")
+                self.log(f"{Fore.YELLOW}Đợi {delay_between_retries} giây trước khi thử lại...{Style.RESET_ALL}")
                 time.sleep(delay_between_retries)
             else:
-                self.log(f"{Fore.RED}SeleniumBase login failed for {email} after {max_retries} attempts.{Style.RESET_ALL}")
-        return None # All retries failed
+                self.log(f"{Fore.RED}Đăng nhập bằng SeleniumBase thất bại cho {email} sau {max_retries} lần thử.{Style.RESET_ALL}")
+        return None
 
     def _write_token(self, email: str, token: str):
         with open(self.tokens_output_path, "a") as f:
             f.write(f"{email}:{token}\n")
-        self.log(f"{Fore.GREEN}Token for {email} successfully written to {self.tokens_output_path}{Style.RESET_ALL}")
+        self.log(f"{Fore.GREEN}Token cho {email} đã được lưu vào {self.tokens_output_path}{Style.RESET_ALL}")
 
     async def user_login(self, email: str, proxy=None, retries=5):
         loop = asyncio.get_event_loop()
         login_result = await loop.run_in_executor(
-            None, # Use default ThreadPoolExecutor
+            None,
             functools.partial(self._seleniumbase_login_sync, email, self.password[email], retries, 5)
         )
 
         if login_result and "accessToken" in login_result:
             self.access_tokens[email] = login_result["accessToken"]
             self._write_token(email, login_result["accessToken"])
-            self.print_message(email, proxy, Fore.GREEN, "Login Success (via SeleniumBase)")
+            self.print_message(email, proxy, Fore.GREEN, "Đăng nhập thành công (qua SeleniumBase)")
             return login_result
         else:
-            self.print_message(email, proxy, Fore.RED, "Login Failed (via SeleniumBase after retries)")
+            self.print_message(email, proxy, Fore.RED, "Đăng nhập thất bại (qua SeleniumBase sau nhiều lần thử)")
             return None
 
     async def user_info(self, email: str, use_proxy: bool, rotate_proxy: bool, proxy=None, retries=5):
@@ -279,7 +277,7 @@ class Monami:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
                     async with session.get(url=url, headers=headers, ssl=False) as response:
                         if response.status == 401:
-                            self.print_message(email, proxy, Fore.YELLOW, "Access token expired, attempting re-login.")
+                            self.print_message(email, proxy, Fore.YELLOW, "Token hết hạn, đang thử đăng nhập lại.")
                           
                             await self.process_user_login(email, use_proxy, rotate_proxy)
                             headers["Authorization"] = f"Bearer {self.access_tokens[email]}"
@@ -290,7 +288,7 @@ class Monami:
                 if attempt < retries - 1:
                     await asyncio.sleep(5)
                     continue
-                self.print_message(email, proxy, Fore.RED, f"GET User Info Failed: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
+                self.print_message(email, proxy, Fore.RED, f"Lấy thông tin người dùng thất bại: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
 
         return None
 
@@ -307,7 +305,7 @@ class Monami:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
                     async with session.patch(url=url, headers=headers, data=data, ssl=False) as response:
                         if response.status == 401:
-                            self.print_message(email, proxy, Fore.YELLOW, "Access token expired, attempting re-login.")
+                            self.print_message(email, proxy, Fore.YELLOW, "Token hết hạn, đang thử đăng nhập lại.")
                             await self.process_user_login(email, use_proxy, rotate_proxy)
                             headers["Authorization"] = f"Bearer {self.access_tokens[email]}"
                             continue
@@ -317,7 +315,7 @@ class Monami:
                 if attempt < retries - 1:
                     await asyncio.sleep(5)
                     continue
-                self.print_message(email, proxy, Fore.RED, f"Check-In Failed: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
+                self.print_message(email, proxy, Fore.RED, f"Check-In thất bại: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
 
         return None
 
@@ -334,7 +332,7 @@ class Monami:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
                     async with session.patch(url=url, headers=headers, data=data, ssl=False) as response:
                         if response.status == 401:
-                            self.print_message(email, proxy, Fore.YELLOW, "Access token expired, attempting re-login.")
+                            self.print_message(email, proxy, Fore.YELLOW, "Token hết hạn, đang thử đăng nhập lại.")
                             await self.process_user_login(email, use_proxy, rotate_proxy)
                             headers["Authorization"] = f"Bearer {self.access_tokens[email]}"
                             continue
@@ -344,7 +342,7 @@ class Monami:
                 if attempt < retries - 1:
                     await asyncio.sleep(5)
                     continue
-                self.print_message(email, proxy, Fore.RED, f"Lite Node Not Connected: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
+                self.print_message(email, proxy, Fore.RED, f"Lite Node không kết nối: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
 
         return None
 
@@ -358,7 +356,7 @@ class Monami:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
                     async with session.get(url=url, headers=headers, ssl=False) as response:
                         if response.status == 401:
-                            self.print_message(email, proxy, Fore.YELLOW, "Access token expired, attempting re-login.")
+                            self.print_message(email, proxy, Fore.YELLOW, "Token hết hạn, đang thử đăng nhập lại.")
                             await self.process_user_login(email, use_proxy, rotate_proxy)
                             headers["Authorization"] = f"Bearer {self.access_tokens[email]}"
                             continue
@@ -368,7 +366,7 @@ class Monami:
                 if attempt < retries - 1:
                     await asyncio.sleep(5)
                     continue
-                self.print_message(email, proxy, Fore.RED, f"Update Point Failed: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
+                self.print_message(email, proxy, Fore.RED, f"Cập nhật điểm thất bại: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
 
         return None
 
@@ -382,7 +380,7 @@ class Monami:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
                     async with session.get(url=url, headers=headers, ssl=False) as response:
                         if response.status == 401:
-                            self.print_message(email, proxy, Fore.YELLOW, "Access token expired, attempting re-login.")
+                            self.print_message(email, proxy, Fore.YELLOW, "Token hết hạn, đang thử đăng nhập lại.")
                             await self.process_user_login(email, use_proxy, rotate_proxy)
                             headers["Authorization"] = f"Bearer {self.access_tokens[email]}"
                             continue
@@ -392,7 +390,7 @@ class Monami:
                 if attempt < retries - 1:
                     await asyncio.sleep(5)
                     continue
-                self.print_message(email, proxy, Fore.RED, f"GET Task Lists Failed: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
+                self.print_message(email, proxy, Fore.RED, f"Lấy danh sách nhiệm vụ thất bại: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
 
         return None
 
@@ -409,7 +407,7 @@ class Monami:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
                     async with session.patch(url=url, headers=headers, data=data, ssl=False) as response:
                         if response.status == 401:
-                            self.print_message(email, proxy, Fore.YELLOW, "Access token expired, attempting re-login.")
+                            self.print_message(email, proxy, Fore.YELLOW, "Token hết hạn, đang thử đăng nhập lại.")
                             await self.process_user_login(email, use_proxy, rotate_proxy)
                             headers["Authorization"] = f"Bearer {self.access_tokens[email]}"
                             continue
@@ -419,12 +417,11 @@ class Monami:
                 if attempt < retries - 1:
                     await asyncio.sleep(5)
                     continue
-                self.print_message(email, proxy, Fore.WHITE, f"Task {task_field}{Fore.RED+Style.BRIGHT} Not Completed: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
+                self.print_message(email, proxy, Fore.WHITE, f"Nhiệm vụ {task_field}{Fore.RED+Style.BRIGHT} chưa hoàn thành: {Fore.YELLOW+Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
 
         return None
 
     async def process_check_connection(self, email: str, use_proxy: bool, rotate_proxy: bool):
- 
         while True:
             proxy = self.get_next_proxy_for_account(email) if use_proxy else None
 
@@ -438,14 +435,12 @@ class Monami:
             await asyncio.sleep(5)
 
     async def process_user_login(self, email: str, use_proxy: bool, rotate_proxy: bool):
- 
-        return await self.user_login(email, None) # Proxy is not directly passed to SB within user_login
+        return await self.user_login(email, None)
 
     async def looping_user_login(self, email: str, use_proxy: bool, rotate_proxy: bool):
         while True:
             await asyncio.sleep(24 * 60 * 55)
             await self.user_login(email, None)
-
 
     async def looping_perform_checkin(self, email: str, use_proxy: bool, rotate_proxy: bool):
         while True:
@@ -456,11 +451,11 @@ class Monami:
                 checked_in = users["checkedIn"]
 
                 if checked_in:
-                    self.print_message(email, proxy, Fore.YELLOW, "Already Check-In Today")
+                    self.print_message(email, proxy, Fore.YELLOW, "Đã check-in hôm nay")
                 else:
                     checkin = await self.perform_checkin(email, use_proxy, rotate_proxy, proxy)
                     if checkin:
-                        self.print_message(email, proxy, Fore.GREEN, "Check-In Success")
+                        self.print_message(email, proxy, Fore.GREEN, "Check-In thành công")
 
             await asyncio.sleep(12 * 60 * 60)
 
@@ -470,7 +465,7 @@ class Monami:
 
             connect = await self.connect_node(email, use_proxy, rotate_proxy, proxy)
             if connect and connect.get("message") == "Last active time updated":
-                self.print_message(email, proxy, Fore.GREEN, "Lite Node Connected")
+                self.print_message(email, proxy, Fore.GREEN, "Lite Node đã kết nối")
                 return True
 
             await asyncio.sleep(5)
@@ -491,17 +486,17 @@ class Monami:
                 today_uptime = update["todayUptime"]
                 total_uptime = update["totalUptime"]
 
-                self.print_message(email, proxy, Fore.GREEN, "Point Updated"
+                self.print_message(email, proxy, Fore.GREEN, "Đã cập nhật điểm"
                     f"{Fore.MAGENTA + Style.BRIGHT} - {Style.RESET_ALL}"
-                    f"{Fore.CYAN + Style.BRIGHT}Earning:{Style.RESET_ALL}"
-                    f"{Fore.WHITE + Style.BRIGHT} Today {point_today:.3f} {Style.RESET_ALL}"
+                    f"{Fore.CYAN + Style.BRIGHT}Thu nhập:{Style.RESET_ALL}"
+                    f"{Fore.WHITE + Style.BRIGHT} Hôm nay {point_today:.3f} {Style.RESET_ALL}"
                     f"{Fore.MAGENTA + Style.BRIGHT}-{Style.RESET_ALL}"
-                    f"{Fore.WHITE + Style.BRIGHT} Total {point_total:.3f} {Style.RESET_ALL}"
+                    f"{Fore.WHITE + Style.BRIGHT} Tổng {point_total:.3f} {Style.RESET_ALL}"
                     f"{Fore.MAGENTA + Style.BRIGHT}-{Style.RESET_ALL}"
-                    f"{Fore.CYAN + Style.BRIGHT} Uptime: {Style.RESET_ALL}"
-                    f"{Fore.WHITE + Style.BRIGHT}Today {today_uptime}{Style.RESET_ALL}"
+                    f"{Fore.CYAN + Style.BRIGHT} Thời gian hoạt động: {Style.RESET_ALL}"
+                    f"{Fore.WHITE + Style.BRIGHT}Hôm nay {today_uptime}{Style.RESET_ALL}"
                     f"{Fore.MAGENTA + Style.BRIGHT} - {Style.RESET_ALL}"
-                    f"{Fore.WHITE + Style.BRIGHT}Total {total_uptime}{Style.RESET_ALL}"
+                    f"{Fore.WHITE + Style.BRIGHT}Tổng {total_uptime}{Style.RESET_ALL}"
                 )
 
             await asyncio.sleep(90)
@@ -512,7 +507,6 @@ class Monami:
 
             task_lists = await self.task_lists(email, use_proxy, rotate_proxy, proxy)
             if task_lists:
-
                 tasks = [
                     (key, value) for key, value in task_lists.items()
                     if key not in ['_id', 'email', '__v']
@@ -524,13 +518,13 @@ class Monami:
 
                     complete = await self.complete_task(email, task_filed, use_proxy, rotate_proxy, proxy)
                     if complete:
-                        self.print_message(email, proxy, Fore.WHITE, f"Task {task_filed} "
-                            f"{Fore.GREEN + Style.BRIGHT}Is Completed{Style.RESET_ALL}"
+                        self.print_message(email, proxy, Fore.WHITE, f"Nhiệm vụ {task_filed} "
+                            f"{Fore.GREEN + Style.BRIGHT}đã hoàn thành{Style.RESET_ALL}"
                         )
 
                     await asyncio.sleep(1)
 
-                self.print_message(email, proxy, Fore.GREEN, "All Available Tasks Have Been Processed")
+                self.print_message(email, proxy, Fore.GREEN, "Đã xử lý tất cả nhiệm vụ khả dụng")
 
             await asyncio.sleep(24 * 60 * 60)                
 
@@ -550,7 +544,7 @@ class Monami:
         try:
             accounts = self.load_accounts()
             if not accounts:
-                self.log(f"{Fore.RED + Style.BRIGHT}No Accounts Loaded.{Style.RESET_ALL}")
+                self.log(f"{Fore.RED + Style.BRIGHT}Không tải được tài khoản nào.{Style.RESET_ALL}")
                 return
 
             use_proxy_choice, rotate_proxy = self.print_question()
@@ -562,7 +556,7 @@ class Monami:
             self.clear_terminal()
             self.welcome()
             self.log(
-                f"{Fore.GREEN + Style.BRIGHT}Account's Total: {Style.RESET_ALL}"
+                f"{Fore.GREEN + Style.BRIGHT}Tổng số tài khoản: {Style.RESET_ALL}"
                 f"{Fore.WHITE + Style.BRIGHT}{len(accounts)}{Style.RESET_ALL}"
             )
 
@@ -579,11 +573,11 @@ class Monami:
 
                     if not "@" in email or not password:
                         self.log(
-                            f"{Fore.CYAN + Style.BRIGHT}[ Account: {Style.RESET_ALL}"
+                            f"{Fore.CYAN + Style.BRIGHT}[ Tài khoản: {Style.RESET_ALL}"
                             f"{Fore.WHITE + Style.BRIGHT}{idx}{Style.RESET_ALL}"
                             f"{Fore.MAGENTA + Style.BRIGHT} - {Style.RESET_ALL}"
-                            f"{Fore.CYAN + Style.BRIGHT}Status:{Style.RESET_ALL}"
-                            f"{Fore.RED + Style.BRIGHT} Invalid Account Data {Style.RESET_ALL}"
+                            f"{Fore.CYAN + Style.BRIGHT}Trạng thái:{Style.RESET_ALL}"
+                            f"{Fore.RED + Style.BRIGHT} Dữ liệu tài khoản không hợp lệ {Style.RESET_ALL}"
                             f"{Fore.CYAN + Style.BRIGHT}]{Style.RESET_ALL}"
                         )
                         continue
@@ -596,7 +590,7 @@ class Monami:
             await asyncio.gather(*tasks)
 
         except Exception as e:
-            self.log(f"{Fore.RED+Style.BRIGHT}Error: {e}{Style.RESET_ALL}")
+            self.log(f"{Fore.RED+Style.BRIGHT}Lỗi: {e}{Style.RESET_ALL}")
             raise e
 
 if __name__ == "__main__":
@@ -607,5 +601,5 @@ if __name__ == "__main__":
         print(
             f"{Fore.CYAN + Style.BRIGHT}[ {datetime.now().astimezone(wib).strftime('%x %X %Z')} ]{Style.RESET_ALL}"
             f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-            f"{Fore.RED + Style.BRIGHT}[ EXIT ] Monami Network - BOT{Style.RESET_ALL}                                       "                              
+            f"{Fore.RED + Style.BRIGHT}[ THOÁT ] Monami Network - BOT{Style.RESET_ALL}"                                      
         )
